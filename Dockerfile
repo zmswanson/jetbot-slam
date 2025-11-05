@@ -69,7 +69,7 @@ RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
              rosdep update --include-eol-distros"
 RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
              rosdep install --from-paths src --ignore-src -y \
-             --skip-keys 'librealsense2 launch_pytest'"
+             --skip-keys 'librealsense2 launch_pytest ntpdate'"
 
 RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
              colcon build --symlink-install \

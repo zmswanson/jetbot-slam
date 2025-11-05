@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  jetbot_slam:
+    container_name: ros_foxy_realsense
+    build:
+      context: .                        # directory containing your Dockerfile
+      dockerfile: Dockerfile            # or ./docker/Dockerfile if nested
+    image: ros-foxy-realsense:l4t-r32.7.1
+    runtime: nvidia
+    network_mode: host
+    privileged: true
+    restart: "no"
+    tty: true
+    stdin_open: true
+    volumes:
+      - ~/zms_engineering/jetbot-slam:/workspace
+    devices:
+      - /dev/video0
+      - /dev/video1
+      - /dev/video2
+      - /dev/bus/usb
+    environment:
+      - ROS_DOMAIN_ID=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    command: ["/bin/bash"]
+
