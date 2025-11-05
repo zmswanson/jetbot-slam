@@ -81,7 +81,7 @@ RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
 #  Final environment setup
 # ==========================================================
 # Ensure ROS 2 Foxy environment is sourced for all interactive shells
-RUN echo "source /opt/ros/foxy/setup.bash" >> /root/.bashrc
+RUN echo "source /opt/ros/$ROS_DISTRO/install/setup.bash" >> /root/.bashrc
 
 WORKDIR /workspace
 CMD ["/bin/bash"]
