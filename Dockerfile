@@ -54,9 +54,6 @@ RUN cd /opt/librealsense/build && \
 # ==========================================================
 FROM librealsense AS ros-realsense
 
-# source ROS2 environment in bash for subsequent commands
-SHELL ["/bin/bash", "-c", "source /opt/ros/$ROS_DISTRO/setup.bash && exec bash"]
-
 WORKDIR /workspace/ros2_ws/src
 # Clean workspace src directory
 RUN rm -rf *
@@ -68,15 +65,16 @@ RUN git clone -b 4.51.1 https://github.com/IntelRealSense/realsense-ros.git && \
     git clone -b stale/foxy https://github.com/ros/diagnostics.git
 
 WORKDIR /workspace/ros2_ws
+RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
+             rosdep update --include-eol-distros"
+RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
+             rosdep install --from-paths src --ignore-src -y \
+             --skip-keys 'librealsense2 launch_pytest'"
 
-# Use existing rosdep cache in base image to resolve system dep
-RUN rosdep update --include-eol-distros
-RUN rosdep install --from-paths src --ignore-src -y \
-        --skip-keys "librealsense2 launch_pytest"
-
-# Build all packages
-RUN colcon build --symlink-install --packages-skip diagnostic_remote_logging && \
-    rm -rf /var/lib/apt/lists/*
+RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
+             colcon build --symlink-install \
+             --packages-skip diagnostic_remote_logging && \
+             rm -rf /var/lib/apt/lists/*"
 
 
 # ==========================================================
