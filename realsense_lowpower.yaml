@@ -1,13 +1,25 @@
-realsense2_camera:
+camera/camera:
   ros__parameters:
-    depth_module.profile: 424x240x6
-    rgb_camera.profile: 320x240x6
+    # Streams
     enable_depth: true
     enable_color: true
+    depth_module.profile: "424x240x6"
+    rgb_camera.profile: "320x240x6"
+
+    # IMU (optional)
     enable_gyro: true
     enable_accel: true
     gyro_fps: 200
     accel_fps: 63
+
+    # Turn off projector / keep it off
     depth_module.emitter_enabled: 0
     depth_module.emitter_on_off: false
     depth_module.emitter_always_on: false
+
+    # Keep CPU/USB light
+    enable_infra1: false
+    enable_infra2: false
+    enable_confidence: false
+    pointcloud.enable: false
+    enable_sync: false
