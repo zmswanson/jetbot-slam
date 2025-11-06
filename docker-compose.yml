@@ -14,7 +14,7 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - ~/zms_engineering/jetbot-slam:/workspace
+      - ~/zms_engineering/jetbot-slam:/workspace/jetbot-slam
     devices:
       - /dev/video0
       - /dev/video1

@@ -76,12 +76,9 @@ RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
              --packages-skip diagnostic_remote_logging && \
              rm -rf /var/lib/apt/lists/*"
 
-
-# ==========================================================
-#  Final environment setup
-# ==========================================================
-# Ensure ROS 2 Foxy environment is sourced for all interactive shells
-RUN echo "source /opt/ros/$ROS_DISTRO/install/setup.bash" >> /root/.bashrc
+# Ensure ROS 2 Foxy environment is sourced
+RUN echo "source /opt/ros/$ROS_DISTRO/install/setup.bash" >> /root/.bashrc && \
+    echo "source /workspace/ros2_ws/install/setup.bash" >> /root/.bashrc
 
 WORKDIR /workspace
 CMD ["/bin/bash"]
