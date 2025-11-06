@@ -5,7 +5,7 @@ services:
     container_name: ros_foxy_realsense
     build:
       context: .                        # directory containing your Dockerfile
-      dockerfile: Dockerfile            # or ./docker/Dockerfile if nested
+      dockerfile: Dockerfile.foxy       # or ./docker/Dockerfile if nested
     image: ros-foxy-realsense:l4t-r32.7.1
     runtime: nvidia
     network_mode: host

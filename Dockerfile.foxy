@@ -83,3 +83,53 @@ RUN echo "source /opt/ros/$ROS_DISTRO/install/setup.bash" >> /root/.bashrc && \
 WORKDIR /workspace
 CMD ["/bin/bash"]
 
+# ==========================================================
+#  Stage 4: foxglove-bridge (ROS 2 Foxy)
+# ==========================================================
+FROM ros-realsense AS foxglove
+
+WORKDIR /workspace
+
+# 1. Build and install nlohmann_json from source (JetPack repo lacks newer version)
+RUN git clone https://github.com/nlohmann/json.git && \
+    cd json && mkdir build && cd build && \
+    cmake .. && make -j"$(($(nproc)-1))" && make install && \
+    cd /workspace && rm -rf json
+
+# 2. Install bridge dependencies (all available for Ubuntu 18.04)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev libasio-dev \
+    libwebsocketpp-dev libboost-system-dev libboost-filesystem-dev \
+    libboost-thread-dev libtinyxml2-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# Upgrade compiler to GCC 9 for full C++17 support
+# ------------------------------------------------------------
+RUN apt-get update && apt-get install -y software-properties-common && \
+    add-apt-repository ppa:ubuntu-toolchain-r/test && apt-get update && \
+    apt-get install -y gcc-9 g++-9 && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
+
+
+# 3. Clone the stand-alone ROS 2 Foxglove Bridge
+WORKDIR /workspace/foxglove_ws/src
+RUN git clone -b 0.3.0 https://github.com/foxglove/ros-foxglove-bridge.git
+
+# 4. Resolve dependencies and build bridge
+WORKDIR /workspace/foxglove_ws
+RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
+             rosdep update --include-eol-distros && \
+             rosdep install --from-paths src --ignore-src -y \
+               --skip-keys 'nlohmann-json-dev'"
+
+# RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
+#              colcon build --symlink-install --cmake-args '-DCMAKE_CXX_STANDARD=14 -DBUILD_TESTING=OFF' && \
+#              rm -rf /var/lib/apt/lists/*"
+
+# # 6. Source everything on container startup
+# RUN echo 'source /workspace/foxglove_ws/install/setup.bash' >> /root/.bashrc
+
+# # 7. Default runtime entrypoint (Foxglove Bridge)
+# CMD ["ros2", "launch", "ros_foxglove_bridge", "foxglove_bridge_launch.xml", "port:=8765"]

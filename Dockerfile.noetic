@@ -19,8 +19,30 @@ RUN apt-key del F42ED6FBAB17C654 || true && \
 RUN apt-get update && apt-get install -y \
     git build-essential cmake python3-catkin-tools \
     libcurl4-openssl-dev libasio-dev \
+    libwebsocketpp-dev libboost-system-dev libboost-thread-dev \
+    libgtest-dev \
  && rm -rf /var/lib/apt/lists/*
 
+# ============================================================
+# Build and install GoogleTest manually (Ubuntu 18.04 only ships sources)
+# ============================================================
+RUN cd /usr/src/gtest && \
+    cmake . && \
+    make -j$(nproc) && \
+    cp *.a /usr/lib
+
+# ============================================================
+# Build and install nlohmann_json from source
+# ============================================================
+WORKDIR /workspace
+RUN git clone https://github.com/nlohmann/json.git && \
+    cd json && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    make install && \
+    cd /workspace && rm -rf json
+    
 # ============================================================
 # Create catkin workspace
 # ============================================================
