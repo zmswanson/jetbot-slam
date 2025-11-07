@@ -1,0 +1,88 @@
+# ============================================================
+#  ROS 2 Galactic Foxglove Bridge for Jetson Nano (L4T 32.7.1)
+#  Zach Swanson – 2025
+# ============================================================
+FROM dustynv/ros:galactic-ros-core-l4t-r32.7.1
+
+LABEL maintainer="Zach Swanson <zmswanson@outlook.com>"
+ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /workspace
+
+
+# Fix ROS 2 GPG key & repo duplicates
+RUN apt-key del F42ED6FBAB17C654 || true && \
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        | tee /usr/share/keyrings/ros-archive-keyring.gpg >/dev/null && \
+    echo "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+        http://packages.ros.org/ros2/ubuntu bionic main" \
+        | tee /etc/apt/sources.list.d/ros2-latest.list && \
+    rm -f /etc/apt/sources.list.d/ros2.list && \
+    apt-get update
+
+# ------------------------------------------------------------
+# Upgrade compiler to GCC 9 for full C++17 support
+# ------------------------------------------------------------
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
+    apt-get update && \
+    apt-get install -y gcc-9 g++-9 && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90 && \
+    gcc --version && g++ --version
+
+# ------------------------------------------------------------
+# Core dependencies
+# ------------------------------------------------------------
+RUN apt-get install -y \
+    git cmake build-essential python3-colcon-common-extensions \
+    libcurl4-openssl-dev libasio-dev \
+    libwebsocketpp-dev libboost-system-dev libboost-thread-dev \
+    libgtest-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# Build and install nlohmann_json (header-only)
+# ------------------------------------------------------------
+WORKDIR /opt
+RUN git clone --depth=1 https://github.com/nlohmann/json.git && \
+    cd json && mkdir build && cd build && \
+    cmake .. && make -j"$(nproc)" && make install && \
+    cd / && rm -rf /opt/json
+
+# ------------------------------------------------------------
+# Create ROS 2 workspace and clone Foxglove Bridge v0.5.1
+# ------------------------------------------------------------
+WORKDIR /workspace/foxglove_ws/src
+RUN git clone -b 0.2.1 https://github.com/foxglove/ros-foxglove-bridge.git
+
+# ------------------------------------------------------------
+# Resolve dependencies and build
+# ------------------------------------------------------------
+WORKDIR /workspace/foxglove_ws
+RUN bash -c "source /opt/ros/galactic/install/setup.bash && \
+             rosdep update --include-eol-distros && \
+             rosdep install --from-paths src --ignore-src -y \
+             --skip-keys 'nlohmann-json-dev'"
+
+RUN bash -c "source /opt/ros/galactic/install/setup.bash && \
+             colcon build --symlink-install \
+             --cmake-args '-DCMAKE_CXX_STANDARD=17 -DBUILD_TESTING=OFF'"
+
+# ------------------------------------------------------------
+# Default environment setup
+# ------------------------------------------------------------
+RUN echo "source /opt/ros/galactic/install/setup.bash" >> /root/.bashrc && \
+    echo 'source /workspace/foxglove_ws/install/setup.bash' >> /root/.bashrc
+
+# ------------------------------------------------------------
+# Expose Foxglove Bridge WebSocket port
+# ------------------------------------------------------------
+EXPOSE 8765
+
+# ------------------------------------------------------------
+# Default entrypoint – Launch Foxglove Bridge
+# ------------------------------------------------------------
+ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/galactic/install/setup.bash"]
+                                # source /workspace/foxglove_ws/install/setup.bash && \
+                                # ros2 launch ros_foxglove_bridge foxglove_bridge_launch.xml port:=8765"]
