@@ -13,15 +13,16 @@ services:
     restart: "no"
     tty: true
     stdin_open: true
-    volumes:
-      - ../../realsense_support:/workspace/realsense_support:rw
+    # volumes:
+    #   - ../../realsense_support:/workspace/realsense_support:rw
     devices:
       - /dev/video0
       - /dev/video1
       - /dev/video2
       - /dev/bus/usb
     environment:
-      - ROS_DOMAIN_ID=0
+      - ROS_DOMAIN_ID=27
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
 

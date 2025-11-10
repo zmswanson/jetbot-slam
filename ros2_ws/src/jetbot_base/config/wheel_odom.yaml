@@ -1,0 +1,26 @@
+jetbot_wheel_odom:
+  ros__parameters:
+    # Serial
+    port: "/dev/ttyTHS1"
+    baud: 115200
+
+    # Encoder / geometry (EDIT THESE)
+    ticks_per_rev: 1920.0
+    wheel_radius_m: 0.0325
+    wheel_base_m: 0.115
+
+    # Sign safety (should be +1/+1 with your wiring fix)
+    left_sign: 1
+    right_sign: 1
+
+    # Frames / topics
+    frame_id: "odom"
+    child_frame_id: "base_link"
+    odom_topic: "/wheel/odom"
+
+    # When adding robot_localization, keep this false and let EKF own odom->base_link.
+    publish_tf: false
+
+    # Covariance diagonals (x,y,z,roll,pitch,yaw)
+    pose_cov_diag:  [1.0e-3, 1.0e-3, 1.0e6, 1.0e6, 1.0e6, 1.0e-2]
+    twist_cov_diag: [1.0e-2, 1.0e6, 1.0e6, 1.0e6, 1.0e6, 1.0e-1]

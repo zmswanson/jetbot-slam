@@ -1,12 +1,83 @@
 # JetBot-SLAM Setup Guide (Jetson Nano)
 
-This document details how to flash, configure, and deploy the **JetBot-SLAM** 
-environment on a Jetson Nano 4 GB using **JetPack 4.6.1 (L4T 32.7.6)**. These
-instructions assume that the Jetson Nano is part of the Waveshare Jetbot AI Kit
-and is therefore powered from the kits power distribution board via GPIO. The
-instructions include JetBot utilities, Docker + ROS 2 Foxy + RealSense, kernel patching, Teensy setup, and Foxglove visualization.
+This repository contains the full setup, firmware, and ROS 2 infrastructure for
+running **JetBot-SLAM** on a **Waveshare JetBot** powered by an **NVIDIA Jetson Nano (4 GB)**.
+
+The system combines:
+- Embedded firmware (Teensy 3.2)
+- ROS 2 Foxy motor + wheel odometry nodes
+- Intel RealSense integration
+- Foxglove visualization
+- Fully containerized deployment using Docker
+
+This README is both:
+- a **first-time bring-up guide**, and
+- a **developer reference** for the motor + odometry stack.
 
 ---
+
+## 0. Repository Structure
+```
+jetbot-slam/
+├── containers/
+│ ├── ros-foxy-jetbot-dev/
+│ │ ├── Dockerfile
+│ │ ├── docker-compose.jetbot.yml
+│ │ └── entrypoint.sh
+│ │
+│ ├── ros-foxy-realsense/
+│ │ ├── Dockerfile.foxy
+│ │ ├── docker-compose.realsense.yml
+│ │ ├── realsense_lowpower.yaml
+│ │ └── ros_realsense_entrypoint.sh
+│ │
+│ └── ros-galactic-foxglove/
+│ ├── Dockerfile.galactic
+│ ├── docker-compose.foxglove.yml
+│ └── ros_foxglove_entrypoint.sh
+│
+├── docker-compose.yml
+├── Dockerfile.noetic
+│
+├── realsense_support/
+│ └── 0001-Fix-patch-to-support-L4T-32.7.6.patch
+│
+├── ros2_ws/
+│ └── src/
+│ └── jetbot_base/
+│ ├── CMakeLists.txt
+│ ├── package.xml
+│ ├── config/
+│ │ └── wheel_odom.yaml
+│ ├── include/
+│ │ └── jetbot_base/
+│ │ ├── jetbot_motor_driver.hpp
+│ │ └── wheel_odom_node.hpp
+│ ├── src/
+│ │ ├── jetbot_motor_driver.cpp
+│ │ ├── jetbot_motor_driver_node.cpp
+│ │ ├── wheel_odom_node.cpp
+│ │ └── wheel_odom_main.cpp
+│ └── launch/
+│ ├── jetbot_motor_driver.launch.py
+│ └── wheel_odom.launch.py
+│
+├── teensy3.2-wheel-odom/
+│ ├── include/
+│ │ ├── WheelEncoders.h
+│ │ ├── protocol.hpp
+│ │ ├── crc16.hpp
+│ │ ├── params.hpp
+│ │ └── commands.hpp
+│ ├── src/
+│ │ ├── main.cpp
+│ │ ├── WheelEncoders.cpp
+│ │ ├── params.cpp
+│ │ └── commands.cpp
+│ └── platformio.ini
+│
+└── README.md
+```
 
 ## 1. Flash the Jetson Nano Image
 
@@ -38,7 +109,6 @@ sync
 # Safely eject the card
 sudo eject /dev/sdX
 ```
-
 
 ### 1.3 First Boot (Headless via Micro-USB)
 
@@ -190,6 +260,8 @@ git clone https://github.com/zmswanson/jetbot-slam.git
 cd jetbot-slam
 ```
 
+---
+
 ## 7. Patch Jetson Kernels for librealsense
 Clone the librealsense library to v2.54.1 (as used in Dockerfile.foxy)
 
@@ -212,40 +284,56 @@ cd ~/workspace/librealsense/
 
 Follow any prompts.
 
-## 8. Launch Docker Containers
+---
 
-To easily build both the ROS2 Foxy container (with RealSense topics) and ROS2
-Galactic container (Foxglove Bridge). Just run
+## 8. Docker & ROS Infrastructure
 
-```bash
-cd ~/workspace/jetbot-slam/
-docker-compose build
-docker-compose up -d
+All ROS components run inside Docker containers.
+
+Containers are separated by function:
+
+* `ros-foxy-jetbot-dev`: motor + wheel odometry
+* `ros-foxy-realsense`: Intel RealSense driver
+* `ros-galactic-foxglove`: visualization
+
+Containers may be built as follows using jetbot-dev as an example:
+``` bash
+docker-compose -f ./containers/ros-foxy-jetbot-dev/docker-compose.jetbot.yml build # optional: add --no-cache flag to build from scratch
 ```
 
-You can confirm operation by opening Foxglove Studios on a host computer and
-connecting to `ws://<jetbot-addr>:8765`. If both are running you should make a
-successful connection and see topics like `/camera/color/image_raw`.
-
-If you want to stop the containers, run
-
-```bash
-docker-compose down
+Containers may be launched in the background as:
+``` bash
+docker-compose -f ./containers/ros-foxy-jetbot-dev/docker-compose.jetbot.yml up -d
 ```
 
-If you're running into issues, it may be beneficial to remove any orphaned
-containers by running
-
-```bash
-docker-compose down --remove-orphans
+You may interactively engage with a Bash shell in the container as:
+``` bash
+docker exec -it foxy_jetbot_dev bash
 ```
 
-To build, launch, or stop the containers independently just append the above 
-commands with `ros_foxy_realsense` or `ros_foxy_realsense`, respectively.
+The containers may be stopped as:
+``` bash
+docker-compose -f ./containers/ros-foxy-jetbot-dev/docker-compose.jetbot.yml down # optional: add the --remove-orphans flag for additional cleanup
+```
+
+**TODO**: Combine Realsense and Jetbot-Dev containers.
+
+**TODO**: Make Realsense container easier to reconfigure camera settings.
+
+---
+
+## 9 Teensy Firmware Programming via Jetson
+The platform.io project includes upload capabilities to scp the firmware file to
+the Jetson Nano and then run an SSH command to launch the Teensy Loader and
+write the firmware to the Teensy device without requiring any physical contact
+with the robot.
+
+Note that this will require (a) you having your SSh keys properly applied on
+the Jetson Nano (see Section 2) and (b) changing `./teensy3.2-wheel-odom/platformio.ini` to use your username and networking.
 
 ### 9.1 Build and Install Teensy Loader CLI
 ```bash
-cd ~/zms_engineering
+cd ~/workspace
 git clone -b 2.3 https://github.com/PaulStoffregen/teensy_loader_cli.git
 cd teensy_loader_cli
 make
@@ -285,8 +373,138 @@ sudo teensy_loader_cli --mcu=TEENSY32 -w -v /home/jetbot/firmware.hex
 | Pin 8 (TXD)     | UART TX   | 0 (RX1)        | Optional serial |
 | Pin 10 (RXD)    | UART RX   | 1 (TX1)        | Optional serial |
 
+TODO: Upload visual diagram, including motor to Teensy wiring and power wiring.
+
+TODO: Include odometry enabled motors that I added to the Jetbot AI Kit.
+
+---
+
+## 11. Teensy 3.2 Wheel Encoder Firmware
+
+### 11.1 Hardware Overview
+* Teensy 3.2
+* Quadrature encoders on left/right wheels (`DFRobot FIT0450`)
+* UART connection to Jetson via `/dev/ttyTHS1`
+* Forward motion = positive ticks on both wheels
+
+### 11.2 Firmware Features
+The Teensy firmware:
+* Reads quadrature encoders
+* Computes delta ticks + dt
+* Streams data over UART using a binary protocol. Includes:
+    - sync word
+    - sequence number
+    - CRC16-CCITT
+* Supports an ASCII command channel on the same UART
+* Persists parameters in EEPROM
+
+Binary mode is default; JSON mode is available for debugging.
+
+### 11.3 Command Channel
+Commands accepted over `/dev/THS1`:
+```
+HELP
+PING
+GET_PARAMS
+SET_PARAM counts_per_rev <float>
+SET_PARAM report_hz <int>
+SET_PARAM invert_left <+1|-1>
+SET_PARAM invert_right <+1|-1>
+RATE <hz>
+MODE BIN
+MODE JSON
+RESET_ODOM
+SAVE_PARAMS
+LOAD_PARAMS
+```
+
+---
+
+## 12. ROS 2 Base Drivers (`jetbot_base`)
+### 12.1 Motor Driver Node
+* Publishes motor commands to the JetBot via /dev/i2c-1
+* Motor control based off Adafruit MotorHat control used in original Jetbot code
+* Runs inside the `ros-foxy-jetbot-dev` container
+* Currently independent of odometry and localization
+
+### 12.2 Wheel Odometry Node (`jetbot_wheel_odom`)
+Consumes the Teensy UART stream and publishes raw wheel odometry.
+
+**Key Features**
+* Robust binary parsing with resynchronization
+* Pose integration from delta ticks (midpoint method)
+* Publishes:
+    - `/wheel/odom/` (`nav_msgs/Odometry`)
+    - `/diagnostics` (`diagnostic_msgs/DiagnosticArray`)
+    - Optional TF broadcast (`odom -> base_link`, disabled by default)
+
+When using `robot_localization`, this node should not publish TF, as the EKF should own `odom -> base_link`.
+
+**Configuration**
+Wheel odometry node configuration is held in
+`ros2_ws/src/jetbot_base/config/wheel_odom.yaml` and includes:
+```yaml
+ticks_per_rev: 1920.0
+wheel_radius_m: 0.0325
+wheel_base_m: 0.120
+
+left_sign: 1
+right_sign: 1
+
+publish_tf: false
+```
+Pose and twist covariance diagonals are also configurable for EKF fusion.
+
+### 12.3 Build the ROS 2 Workspace and Launch Nodes
+
+Inside the `ros-foxy-jetbot-dev` container run:
+``` bash
+cd /ros2_ws
+colcon build --symlink-install
+source install/setup.bash
+```
+
+Launch the wheel odometry node:
+```bash
+ros2 launch jetbot_base wheel_odom.launch.py \
+  params_file:=/ros2_ws/src/jetbot_base/config/wheel_odom.yaml
+```
+
+Launch the motor driver node:
+```bash
+ros2 launch jetbot_base jetbot_motor_driver.launch.py
+```
+
+### 12.4 Diagnostics & Debugging
+Check diagnostic via `ros2 topic echo /diagnostics` and look for:
+* `frames_ok`
+* `crc_fail`
+* `seq_jumps`
+* `last_packet_age_s`
+
+Switch Teensy to JSON mode for manual debugging:
+```bash
+echo "MODE JSON" > /dev/ttyTHS1
+cat /dev/ttyTHS1
+```
+
+Switch back:
+```bash
+echo "MODE BIN" > /dev/ttyTHS1
+```
+
+---
+
+## 13. Continued Integrations
+The current setup is designed to integrate cleanly with:
+* `robot_localization` with extended Kalman filter (EKF)
+* IMU fusion from the Intel Realsense D435i integrated IMU
+* Nav2/ SLAM toolchains
+* ros2_control migration
+
 ---
 
 **Author:** Zach Swanson  
+**License:** Apache-2.0  
 **Project:** JetBot-SLAM (ROS 2 + RealSense + Teensy)  
 **Platform:** Jetson Nano 4 GB (JetPack 4.6.1 / L4T 32.7.1)
