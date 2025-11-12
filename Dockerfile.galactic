@@ -80,9 +80,14 @@ RUN echo "source /opt/ros/galactic/install/setup.bash" >> /root/.bashrc && \
 # ------------------------------------------------------------
 EXPOSE 8765
 
-# ------------------------------------------------------------
-# Default entrypoint – Launch Foxglove Bridge
-# ------------------------------------------------------------
-ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/galactic/install/setup.bash"]
-                                # source /workspace/foxglove_ws/install/setup.bash && \
-                                # ros2 launch ros_foxglove_bridge foxglove_bridge_launch.xml port:=8765"]
+# ----------------------------------------------------------
+#  Copy entrypoint script
+# ----------------------------------------------------------
+WORKDIR /workspace
+COPY ros_foxglove_entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# ----------------------------------------------------------
+#  Default command — launch Foxglove Bridge
+# ----------------------------------------------------------
+CMD ["/entrypoint.sh"]

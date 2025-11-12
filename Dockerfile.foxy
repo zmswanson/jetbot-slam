@@ -84,9 +84,11 @@ RUN echo "source /opt/ros/$ROS_DISTRO/install/setup.bash" >> /root/.bashrc && \
 #  Copy RealSense config & entrypoint script
 # ----------------------------------------------------------
 WORKDIR /workspace
-RUN chmod +x /workspace/jetbot-slam/ros_realsense_entrypoint.sh
+COPY realsense_lowpower.yaml /workspace/jetbot-slam/realsense_lowpower.yaml
+COPY ros_realsense_entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # ----------------------------------------------------------
 #  Default command — launch RealSense in background
 # ----------------------------------------------------------
-CMD ["/workspace/jetbot-slam/ros_realsense_entrypoint.sh"]
+CMD ["/entrypoint.sh"]
