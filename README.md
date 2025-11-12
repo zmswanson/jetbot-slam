@@ -212,11 +212,36 @@ cd ~/workspace/librealsense/
 
 Follow any prompts.
 
-## 8. Build ROS 2 Foxy + RealSense Docker Image
+## 8. Launch Docker Containers
 
-### 6.1 Clone Repository
+To easily build both the ROS2 Foxy container (with RealSense topics) and ROS2
+Galactic container (Foxglove Bridge). Just run
 
-## 9. Teensy Microcontroller Setup
+```bash
+cd ~/workspace/jetbot-slam/
+docker-compose build
+docker-compose up -d
+```
+
+You can confirm operation by opening Foxglove Studios on a host computer and
+connecting to `ws://<jetbot-addr>:8765`. If both are running you should make a
+successful connection and see topics like `/camera/color/image_raw`.
+
+If you want to stop the containers, run
+
+```bash
+docker-compose down
+```
+
+If you're running into issues, it may be beneficial to remove any orphaned
+containers by running
+
+```bash
+docker-compose down --remove-orphans
+```
+
+To build, launch, or stop the containers independently just append the above 
+commands with `ros_foxy_realsense` or `ros_foxy_realsense`, respectively.
 
 ### 9.1 Build and Install Teensy Loader CLI
 ```bash
@@ -259,70 +284,6 @@ sudo teensy_loader_cli --mcu=TEENSY32 -w -v /home/jetbot/firmware.hex
 | Pin 5 (SCL)     | I²C Clock | 19 (SCL0)      | Use pull-ups if needed |
 | Pin 8 (TXD)     | UART TX   | 0 (RX1)        | Optional serial |
 | Pin 10 (RXD)    | UART RX   | 1 (TX1)        | Optional serial |
-
----
-
-## 11. Validation and Monitoring
-
-Inside container:
-```bash
-ros2 topic hz /camera/color/image_raw
-ros2 topic hz /camera/depth/image_rect_raw
-```
-
-Host I²C monitor:
-```bash
-python3 /opt/jetbot/jetbot/i2c_monitor.py
-```
-
-RealSense test:
-```bash
-realsense-viewer
-```
-
----
-
-## 12. Foxglove Bridge (Optional)
-
-```bash
-sudo apt install -y ros-foxy-foxglove-bridge
-ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765
-```
-Connect via Foxglove Studio: `ws://<nano_ip>:8765`
-
----
-
-## 13. Summary
-
-- **Base Image:** JetPack 4.6.1 / L4T 32.7.1  
-- **ROS 2:** Foxy Fitzroy (Docker)  
-- **RealSense:** v2.54.1 (patched for Nano)  
-- **Hardware:** Intel D435i + Teensy 3.2  
-- **Host Tools:** JetBot, Jupyter, Foxglove, Screen
-
----
-
-## 14. Common Commands
-
-```bash
-docker ps                     # List containers
-docker exec -it ros_foxy_realsense bash
-rs-enumerate-devices          # Check RealSense
-ros2 topic list               # List topics
-ros2 launch realsense2_camera rs_launch.py
-```
-
----
-
-## 15. Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| Docker runtime missing | Re-edit `/etc/docker/daemon.json` and restart Docker |
-| RealSense not detected | Re-run librealsense patch and reboot |
-| Teensy not visible | Add to `dialout` and `plugdev` groups |
-| I²C error | Enable I²C in `/boot/extlinux/extlinux.conf`; use `i2cdetect -y 1` |
-| Jupyter not launching | `sudo systemctl restart jupyter.service` or run manually |
 
 ---
 
