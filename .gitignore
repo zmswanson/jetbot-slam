@@ -1,2 +1,5 @@
 catkin_ws/
 json/
+.DS_Store
+.pio
+.vscode

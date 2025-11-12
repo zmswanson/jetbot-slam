@@ -79,6 +79,14 @@ RUN bash -c "source /opt/ros/$ROS_DISTRO/install/setup.bash && \
 # Ensure ROS 2 Foxy environment is sourced
 RUN echo "source /opt/ros/$ROS_DISTRO/install/setup.bash" >> /root/.bashrc && \
     echo "source /workspace/ros2_ws/install/setup.bash" >> /root/.bashrc
-
+    
+# ----------------------------------------------------------
+#  Copy RealSense config & entrypoint script
+# ----------------------------------------------------------
 WORKDIR /workspace
-CMD ["/bin/bash"]
+RUN chmod +x /workspace/jetbot-slam/ros_realsense_entrypoint.sh
+
+# ----------------------------------------------------------
+#  Default command — launch RealSense in background
+# ----------------------------------------------------------
+CMD ["/workspace/jetbot-slam/ros_realsense_entrypoint.sh"]

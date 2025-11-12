@@ -1,0 +1,24 @@
+From a41e6393c8fadd8bd6787916bcd358f5f9998758 Mon Sep 17 00:00:00 2001
+From: Zach Swanson <zach.swanson@doane.edu>
+Date: Wed, 12 Nov 2025 14:36:02 -0600
+Subject: [PATCH] Fix patch to support L4T 32.7.6
+
+---
+ scripts/patch-realsense-ubuntu-L4T.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/patch-realsense-ubuntu-L4T.sh b/scripts/patch-realsense-ubuntu-L4T.sh
+index e58a2c79a..cf2839dcc 100755
+--- a/scripts/patch-realsense-ubuntu-L4T.sh
++++ b/scripts/patch-realsense-ubuntu-L4T.sh
+@@ -57,7 +57,7 @@ case ${JETSON_L4T_VERSION} in
+     PATCHES_REV="4.4"          # Baseline for the patches
+     echo -e "\e[32mNote: the patch makes changes to kernel device tree to support HID IMU sensors\e[0m"
+     ;;
+-  "32.4.4" | "32.5" | "32.5.1" | "32.6.1" | "32.7.1")
++  "32.4.4" | "32.5" | "32.5.1" | "32.6.1" | "32.7.1" | "32.7.6")
+     PATCHES_REV="4.4.1"        # JP 4.4.1, 32.7.1 is JP 4.6.1
+     ;;
+   "35.1")
+-- 
+2.17.1
