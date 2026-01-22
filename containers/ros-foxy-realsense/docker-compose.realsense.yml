@@ -1,21 +1,6 @@
 version: "3.8"
 
 services:
-  ros_galactic_foxglove:
-    container_name: ros_galactic_foxglove
-    build:
-      context: .
-      dockerfile: Dockerfile.galactic
-    image: ros-galactic-foxglove:l4t-r32.7.1
-    network_mode: host
-    runtime: nvidia
-    tty: true
-    stdin_open: true
-    environment:
-      - ROS_DISTRO=galactic
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
-
   ros_foxy_realsense:
     container_name: ros_foxy_realsense
     build:
@@ -29,7 +14,7 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - ~/workspace/jetbot-slam:/workspace/jetbot-slam
+      - ../../realsense_support:/workspace/realsense_support:rw
     devices:
       - /dev/video0
       - /dev/video1

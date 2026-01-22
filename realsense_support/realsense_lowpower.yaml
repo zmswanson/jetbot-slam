@@ -13,9 +13,9 @@ camera/camera:
     accel_fps: 63
 
     # Turn off projector / keep it off
-    depth_module.emitter_enabled: 0
-    depth_module.emitter_on_off: false
-    depth_module.emitter_always_on: false
+    depth_module.emitter_enabled: 1
+    depth_module.emitter_on_off: true
+    depth_module.emitter_always_on: true
 
     # Keep CPU/USB light
     enable_infra1: false

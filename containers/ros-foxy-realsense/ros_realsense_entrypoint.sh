@@ -6,7 +6,7 @@ source /opt/ros/foxy/install/setup.bash
 source /workspace/ros2_ws/install/setup.bash
 
 echo "Launching RealSense node in background..."
-ros2 launch realsense2_camera rs_launch.py config_file:="'/workspace/jetbot-slam/realsense_lowpower.yaml'" &
+ros2 launch realsense2_camera rs_launch.py config_file:="'/workspace/realsense_support/realsense_lowpower.yaml'" &
 
 # Optional: wait a bit to confirm it's alive
 sleep 3
