@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  jetbot_stack:
+    container_name: jetbot_stack
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jetbot-stack:foxy-l4t-r32.7.1
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    shm_size: "1024m"
+    privileged: true
+    restart: "no"
+    environment:
+      - ROS_DOMAIN_ID=27
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+
+    # Mount your development workspace
+    volumes:
+      - /dev/shm:/dev/shm
+      - ../../ros2_ws:/ros2_ws:rw
+
+    # Devices for JetBot + RealSense
+    devices:
+      # RealSense (USB + V4L nodes)
+      - /dev/bus/usb:/dev/bus/usb
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+
+      # JetBot motor HAT / encoders / misc
+      - /dev/i2c-1:/dev/i2c-1
+      - /dev/ttyTHS1:/dev/ttyTHS1
+
+    working_dir: /ros2_ws
+    tty: true
+    stdin_open: true

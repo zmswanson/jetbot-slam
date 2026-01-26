@@ -8,6 +8,10 @@ services:
       dockerfile: Dockerfile.galactic
     image: ros-galactic-foxglove:l4t-r32.7.1
     network_mode: host
+    ipc: host
+    shm_size: "1024m"
+    volumes:
+      - /dev/shm:/dev/shm
     runtime: nvidia
     tty: true
     stdin_open: true

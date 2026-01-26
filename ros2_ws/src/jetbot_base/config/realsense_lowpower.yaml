@@ -1,5 +1,9 @@
 camera/camera:
   ros__parameters:
+    # TF: root the RealSense TF tree at a frame you control via URDF
+    base_frame_id: "realsense_mount_link"
+    publish_tf: true
+    tf_publish_rate: 1.0
     # Streams
     enable_depth: true
     enable_color: true

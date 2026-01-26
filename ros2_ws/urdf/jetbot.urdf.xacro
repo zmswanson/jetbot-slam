@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<robot name="jetbot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ========================= -->
+  <!-- Geometry parameters       -->
+  <!-- ========================= -->
+  <!-- Keep wheel_base_m and wheel_radius_m consistent with wheel_odom.yaml -->
+  <xacro:property name="wheel_base_m"   value="0.115"/>
+  <xacro:property name="wheel_radius_m" value="0.035"/>
+
+  <!-- Approximate chassis dims (edit to match robot) -->
+  <xacro:property name="base_length_m" value="0.143"/>
+  <xacro:property name="base_width_m"  value="0.130"/>
+  <!-- Switch commented below if you want to include Jetson Nano in chassis height -->
+  <xacro:property name="base_height_m" value="0.042"/>
+  <!-- <xacro:property name="base_height_m" value="0.110"/> -->
+
+  <!-- Measure these from base_link (axle midpoint) -->
+  <xacro:property name="front_extent_m" value="0.048"/>  <!-- axle → front -->
+  <xacro:property name="rear_extent_m"  value="0.095"/>  <!-- axle → rear  -->
+
+  <!-- Derived -->
+  <xacro:property name="chassis_center_x" value="${(front_extent_m - rear_extent_m)/2.0}"/>
+
+  <!-- Put chassis roughly centered vertically about axle; adjust if your axle is low/high -->
+  <xacro:property name="chassis_center_z" value="0.0"/>
+
+
+  <!-- RealSense mount transform (EDIT THESE to match measured mount) -->
+<xacro:property name="rs_x" value="0.090"/>
+<xacro:property name="rs_y" value="0.000"/>
+<xacro:property name="rs_z" value="0.090"/>
+
+<xacro:property name="rs_roll"  value="0.0"/>
+<xacro:property name="rs_pitch" value="0.0"/>
+<xacro:property name="rs_yaw"   value="0.0"/>
+
+
+  <!-- ========================= -->
+  <!-- Core links                -->
+  <!-- ========================= -->
+  <link name="base_link">
+    <!-- Visual geometry (RViz) -->
+    <visual>
+      <!-- If your axle is forward of chassis center, set chassis_center_x != 0 -->
+      <origin xyz="${chassis_center_x} 0 ${chassis_center_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_length_m} ${base_width_m} ${base_height_m}"/>
+      </geometry>
+    </visual>
+
+    <!-- Collision geometry (Nav2/costmaps, physics sims) -->
+    <collision>
+      <origin xyz="${chassis_center_x} 0 ${chassis_center_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_length_m} ${base_width_m} ${base_height_m}"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <!-- Optional, useful for 2D navigation stacks -->
+  <link name="base_footprint"/>
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_footprint"/>
+    <!-- Change depending on a) base_link location and b) if ground coincidence is needed -->
+    <!-- <origin xyz="0 0 -${wheel_radius_m}" rpy="0 0 0"/> -->
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================= -->
+  <!-- Wheels (static unless you publish joint states) -->
+  <!-- ========================= -->
+  <link name="left_wheel_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius_m}" length="0.035"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel_link"/>
+    <origin xyz="0 ${wheel_base_m/2.0} 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="right_wheel_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius_m}" length="0.035"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel_link"/>
+    <origin xyz="0 ${-wheel_base_m/2.0} 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- ========================= -->
+  <!-- RealSense mount frame     -->
+  <!-- ========================= -->
+  <!-- We root the RealSense TF tree at this frame by setting:
+       base_frame_id: realsense_mount_link
+       in realsense_lowpower.yaml
+  -->
+  <link name="realsense_mount_link"/>
+  <joint name="realsense_mount_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="realsense_mount_link"/>
+    <origin xyz="${rs_x} ${rs_y} ${rs_z}" rpy="${rs_roll} ${rs_pitch} ${rs_yaw}"/>
+  </joint>
+
+</robot>
